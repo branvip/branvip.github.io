@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/static/css/main.a900c5bb.css",
+    "main.js": "/static/js/main.c820d7f6.js",
+    "static/media/branvip.png": "/static/media/branvip.1d1a203d44100001baa4.png",
+    "index.html": "/index.html",
+    "static/media/getFetch.cjs": "/static/media/getFetch.c780682470504fffbd04.cjs",
+    "main.a900c5bb.css.map": "/static/css/main.a900c5bb.css.map",
+    "main.c820d7f6.js.map": "/static/js/main.c820d7f6.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.a900c5bb.css",
+    "static/js/main.c820d7f6.js"
+  ]
+}
