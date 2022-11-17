@@ -1,0 +1,127 @@
+{
+  "meta": {
+    "options": {
+      "linkedFile": "/views/admin/trademarks.ejs",
+      "linkedForm": "form_kipris_bulk_update"
+    },
+    "$_POST": [
+      {
+        "type": "text",
+        "fieldName": "tm_ids",
+        "name": "tm_ids"
+      }
+    ]
+  },
+  "exec": {
+    "steps": [
+      {
+        "name": "validation",
+        "module": "core",
+        "action": "exec",
+        "options": {
+          "exec": "validation/admin"
+        },
+        "output": false
+      },
+      {
+        "name": "trademark_ids",
+        "module": "core",
+        "action": "setvalue",
+        "options": {
+          "value": "{{$_POST.tm_ids.split(',')}}"
+        },
+        "meta": [],
+        "outputType": "text",
+        "output": false
+      },
+      {
+        "name": "bulk_update",
+        "module": "core",
+        "action": "repeat",
+        "options": {
+          "repeat": "{{trademark_ids}}",
+          "outputFields": [],
+          "exec": {
+            "steps": [
+              {
+                "name": "tm_number",
+                "module": "dbupdater",
+                "action": "custom",
+                "options": {
+                  "connection": "db",
+                  "sql": {
+                    "query": "select\n       tm.id,\n       case when tm.application_number is not null then tm.application_number else tm.international_register_number end as number,\n       case when tm.application_number is not null then 'application' else 'international' end as type,\n       is_connected_kipris\n\nfrom trademark tm\nwhere tm.id = :id",
+                    "params": [
+                      {
+                        "name": ":id",
+                        "value": "{{$value}}",
+                        "test": ""
+                      }
+                    ]
+                  }
+                },
+                "output": false,
+                "meta": [
+                  {
+                    "name": "id",
+                    "type": "number"
+                  },
+                  {
+                    "name": "number",
+                    "type": "text"
+                  },
+                  {
+                    "name": "type",
+                    "type": "text"
+                  },
+                  {
+                    "name": "is_connected_kipris",
+                    "type": "boolean"
+                  }
+                ],
+                "outputType": "array"
+              },
+              {
+                "name": "updated_tm_number",
+                "module": "core",
+                "action": "setsession",
+                "options": {
+                  "value": "{{tm_number[0]}}"
+                }
+              },
+              {
+                "name": "exec",
+                "module": "core",
+                "action": "exec",
+                "options": {
+                  "exec": "kipris_plus/update"
+                },
+                "output": true
+              }
+            ]
+          }
+        },
+        "output": true,
+        "meta": [
+          {
+            "name": "$index",
+            "type": "number"
+          },
+          {
+            "name": "$number",
+            "type": "number"
+          },
+          {
+            "name": "$name",
+            "type": "text"
+          },
+          {
+            "name": "$value",
+            "type": "object"
+          }
+        ],
+        "outputType": "array"
+      }
+    ]
+  }
+}

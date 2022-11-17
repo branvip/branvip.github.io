@@ -1,0 +1,44 @@
+{
+  "meta": {
+    "$_GET": [
+      {
+        "type": "text",
+        "name": "contact_id"
+      }
+    ]
+  },
+  "exec": {
+    "steps": [
+      {
+        "name": "",
+        "module": "auth",
+        "action": "restrict",
+        "options": {
+          "provider": "manager",
+          "loginUrl": "/admin/login",
+          "forbiddenUrl": "/"
+        }
+      },
+      {
+        "name": "contact",
+        "module": "dbupdater",
+        "action": "custom",
+        "options": {
+          "connection": "db",
+          "sql": {
+            "query": "select c.*, json_agg(t.*) as trademarks\n\nfrom contact c\nleft join contact_trademark ct on c.id = ct.contact_id\nleft join trademark t on ct.trademark_id = t.id\nwhere c.id = :contact_id\ngroup by c.id",
+            "params": [
+              {
+                "name": ":contact_id",
+                "value": "{{$_GET.contact_id}}"
+              }
+            ]
+          }
+        },
+        "output": true,
+        "meta": [],
+        "outputType": "array"
+      }
+    ]
+  }
+}

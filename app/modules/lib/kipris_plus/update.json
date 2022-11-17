@@ -1,0 +1,1065 @@
+{
+  "meta": {
+    "$_POST": [
+      {
+        "type": "text",
+        "name": "image_url"
+      },
+      {
+        "type": "text",
+        "name": "thumbnail_url"
+      },
+      {
+        "type": "text",
+        "name": "applicant_name"
+      },
+      {
+        "type": "text",
+        "name": "agent_name"
+      },
+      {
+        "type": "number",
+        "name": "id"
+      },
+      {
+        "type": "array",
+        "name": "record",
+        "sub": [
+          {
+            "type": "number",
+            "name": "$_SESSION"
+          },
+          {
+            "type": "number",
+            "name": "vienna_code"
+          },
+          {
+            "type": "datetime",
+            "name": "NOW_UTC"
+          },
+          {
+            "type": "number",
+            "name": "$value"
+          }
+        ]
+      }
+    ],
+    "$_SESSION": [
+      {
+        "type": "object",
+        "name": "updated_tm_number"
+      }
+    ]
+  },
+  "exec": {
+    "steps": [
+      {
+        "name": "kipris_api_key",
+        "module": "core",
+        "action": "setvalue",
+        "options": {
+          "value": "JRz2glirBuZs1jlxrcAuLeG6DXGsb8GeDb700KdBxSs="
+        },
+        "meta": [],
+        "outputType": "text"
+      },
+      {
+        "name": "",
+        "module": "core",
+        "action": "condition",
+        "options": {
+          "if": "{{$_SESSION.updated_tm_number.type=='international'}}",
+          "then": {
+            "steps": [
+              {
+                "name": "api_search_international_number",
+                "module": "api",
+                "action": "send",
+                "options": {
+                  "url": "http://plus.kipris.or.kr/kipo-api/kipi/trademarkInfoSearchService/getAdvancedSearch",
+                  "params": {
+                    "ServiceKey": "{{kipris_api_key}}",
+                    "internationalRegisterNumber": "{{$_SESSION.updated_tm_number.number}}",
+                    "application": "true%C2%AEistration=true",
+                    "refused": "true",
+                    "expiration": "true",
+                    "withdrawal": "true",
+                    "publication": "true",
+                    "cancel": "true",
+                    "abandonment": "true",
+                    "businessEmblem": "true",
+                    "certMark": "true",
+                    "collectiveMark": "true",
+                    "geoCertMark": "true",
+                    "geoOrgMark": "true",
+                    "internationalMark": "true",
+                    "serviceMark": "true",
+                    "trademark": "true",
+                    "trademarkServiceMark": "true",
+                    "character": "true",
+                    "compositionCharacter": "true",
+                    "figure": "true",
+                    "figureComposition": "true",
+                    "fragrance": "true",
+                    "sound": "true",
+                    "color": "true",
+                    "colorMixed": "true",
+                    "dimension": "true",
+                    "hologram": "true",
+                    "invisible": "true",
+                    "motion": "true",
+                    "visual": "true"
+                  },
+                  "passErrors": false
+                },
+                "output": false
+              },
+              {
+                "name": "json",
+                "module": "core",
+                "action": "setvalue",
+                "options": {
+                  "value": "{{xml2json(api_search_international_number.data)}}"
+                },
+                "meta": [],
+                "outputType": "object",
+                "output": false
+              },
+              {
+                "name": "search_number",
+                "module": "core",
+                "action": "setvalue",
+                "options": {
+                  "value": "{{json.response.body[0].items[0].item[0].appReferenceNumber[0]?json.response.body[0].items[0].item[0].appReferenceNumber[0]:json.response.body[0].items[0].item[0].applicationNumber[0]}}"
+                },
+                "meta": [],
+                "outputType": "object",
+                "output": true
+              }
+            ]
+          },
+          "else": {
+            "steps": {
+              "name": "search_number",
+              "module": "core",
+              "action": "setvalue",
+              "options": {
+                "value": "{{$_SESSION.updated_tm_number.number}}"
+              },
+              "meta": [],
+              "outputType": "object",
+              "output": false
+            }
+          }
+        },
+        "outputType": "boolean"
+      },
+      {
+        "name": "",
+        "module": "core",
+        "action": "condition",
+        "options": {
+          "if": "{{!search_number}}",
+          "then": {
+            "steps": [
+              {
+                "name": "update_connected_fail",
+                "module": "dbupdater",
+                "action": "update",
+                "options": {
+                  "connection": "db",
+                  "sql": {
+                    "type": "update",
+                    "values": [
+                      {
+                        "table": "trademark",
+                        "column": "updated_at",
+                        "type": "datetime",
+                        "value": "{{NOW_UTC}}"
+                      },
+                      {
+                        "table": "trademark",
+                        "column": "is_connected_kipris",
+                        "type": "boolean",
+                        "value": "0"
+                      }
+                    ],
+                    "table": "trademark",
+                    "wheres": {
+                      "condition": "AND",
+                      "rules": [
+                        {
+                          "id": "id",
+                          "field": "id",
+                          "type": "double",
+                          "operator": "equal",
+                          "value": "{{$_SESSION.updated_tm_number.id}}",
+                          "data": {
+                            "column": "id"
+                          },
+                          "operation": "="
+                        }
+                      ],
+                      "conditional": null,
+                      "valid": true
+                    },
+                    "returning": "id",
+                    "query": "UPDATE trademark\nSET updated_at = :P1 /* {{NOW_UTC}} */, is_connected_kipris = '0'\nWHERE id = :P2 /* {{$_SESSION.updated_tm_number.id}} */",
+                    "params": [
+                      {
+                        "name": ":P1",
+                        "type": "expression",
+                        "value": "{{NOW_UTC}}"
+                      },
+                      {
+                        "operator": "equal",
+                        "type": "expression",
+                        "name": ":P2",
+                        "value": "{{$_SESSION.updated_tm_number.id}}"
+                      }
+                    ]
+                  }
+                },
+                "meta": [
+                  {
+                    "name": "affected",
+                    "type": "number"
+                  }
+                ]
+              },
+              {
+                "name": "fail_msg",
+                "module": "core",
+                "action": "setvalue",
+                "options": {
+                  "value": "{{'키프리스에 국제등록번호 '+$_SESSION.updated_tm_number.number+'가 조회되지 않습니다.'}}"
+                },
+                "meta": [],
+                "output": true,
+                "outputType": "text"
+              }
+            ]
+          },
+          "else": {
+            "steps": [
+              {
+                "name": "api_search_application_info",
+                "module": "api",
+                "action": "send",
+                "options": {
+                  "url": "http://plus.kipris.or.kr/kipo-api/kipi/trademarkInfoSearchService/getBibliographyDetailInfoSearch",
+                  "params": {
+                    "ServiceKey": "{{kipris_api_key}}",
+                    "applicationNumber": "{{search_number}}"
+                  },
+                  "passErrors": false
+                },
+                "output": false
+              },
+              {
+                "name": "json_info",
+                "module": "core",
+                "action": "setvalue",
+                "options": {
+                  "value": "{{xml2json(api_search_application_info.data)}}"
+                },
+                "meta": [],
+                "outputType": "object",
+                "output": false
+              },
+              {
+                "name": "trademark_info",
+                "module": "core",
+                "action": "setvalue",
+                "options": {
+                  "value": "{{json_info.response.body[0].item[0]}}"
+                },
+                "meta": [],
+                "outputType": "object",
+                "output": false
+              },
+              {
+                "name": "",
+                "module": "core",
+                "action": "condition",
+                "options": {
+                  "if": "{{trademark_info}}",
+                  "then": {
+                    "steps": [
+                      {
+                        "name": "biblio_summary_info",
+                        "module": "core",
+                        "action": "setvalue",
+                        "options": {
+                          "value": "{{trademark_info.biblioSummaryInfoArray[0].biblioSummaryInfo[0]}}"
+                        },
+                        "meta": [],
+                        "outputType": "object",
+                        "output": true
+                      },
+                      {
+                        "name": "applicant_info",
+                        "module": "core",
+                        "action": "setvalue",
+                        "options": {
+                          "value": "{{trademark_info.applicantInfoArray[0].applicantInfo[0]}}"
+                        },
+                        "meta": [],
+                        "outputType": "object",
+                        "output": true
+                      },
+                      {
+                        "name": "agent_info",
+                        "module": "core",
+                        "action": "setvalue",
+                        "options": {
+                          "value": "{{trademark_info.agentInfoArray[0].agentInfo[0]}}"
+                        },
+                        "meta": [],
+                        "outputType": "object",
+                        "output": true
+                      },
+                      {
+                        "name": "vienna_code_info",
+                        "module": "core",
+                        "action": "setvalue",
+                        "options": {
+                          "value": "{{trademark_info.viennaCodeInfoArray[0].viennaCodeInfo}}"
+                        },
+                        "meta": [],
+                        "outputType": "array",
+                        "output": true
+                      },
+                      {
+                        "name": "product_type",
+                        "module": "core",
+                        "action": "setvalue",
+                        "options": {
+                          "value": "{{trademark_info.asignProductArray[0].asignProduct.flatten('mainCode').flatten(0).unique()}}"
+                        },
+                        "meta": [],
+                        "outputType": "array",
+                        "output": true
+                      },
+                      {
+                        "name": "sample_image_info",
+                        "module": "core",
+                        "action": "setvalue",
+                        "options": {
+                          "value": "{{trademark_info.sampleImageInfoArray[0].sampleImageInfo[0]}}"
+                        },
+                        "meta": [],
+                        "outputType": "array",
+                        "output": true
+                      },
+                      {
+                        "name": "update_trademark",
+                        "module": "dbupdater",
+                        "action": "update",
+                        "options": {
+                          "connection": "db",
+                          "sql": {
+                            "type": "update",
+                            "values": [
+                              {
+                                "table": "trademark",
+                                "column": "application_number",
+                                "type": "text",
+                                "value": "{{biblio_summary_info.applicationNumber[0].trim()?biblio_summary_info.applicationNumber[0]:null}}"
+                              },
+                              {
+                                "table": "trademark",
+                                "column": "application_date",
+                                "type": "date",
+                                "value": "{{biblio_summary_info.applicationDate[0].trim() ? biblio_summary_info.applicationDate[0]:null}}"
+                              },
+                              {
+                                "table": "trademark",
+                                "column": "app_reference_number",
+                                "type": "text",
+                                "value": "{{biblio_summary_info.appReferenceNumber[0].trim()?biblio_summary_info.appReferenceNumber[0]:null}}"
+                              },
+                              {
+                                "table": "trademark",
+                                "column": "reg_reference_number",
+                                "type": "text",
+                                "value": "{{biblio_summary_info.regReferenceNumber[0]}}"
+                              },
+                              {
+                                "table": "trademark",
+                                "column": "registration_number",
+                                "type": "text",
+                                "value": "{{biblio_summary_info.registrationNumber[0].split(',')[0]}}"
+                              },
+                              {
+                                "table": "trademark",
+                                "column": "registration_date",
+                                "type": "date",
+                                "value": "{{biblio_summary_info.registrationDate[0].trim()?biblio_summary_info.registrationDate[0].split(',')[0]:null}}"
+                              },
+                              {
+                                "table": "trademark",
+                                "column": "public_number",
+                                "type": "text",
+                                "value": "{{biblio_summary_info.publicationNumber[0]}}"
+                              },
+                              {
+                                "table": "trademark",
+                                "column": "public_date",
+                                "type": "date",
+                                "value": "{{biblio_summary_info.publicationDate[0].trim()?biblio_summary_info.publicationDate[0]:null}}"
+                              },
+                              {
+                                "table": "trademark",
+                                "column": "trademark_name",
+                                "type": "text",
+                                "value": "{{biblio_summary_info.productName[0]}}"
+                              },
+                              {
+                                "table": "trademark",
+                                "column": "trademark_name_name_en",
+                                "type": "text",
+                                "value": "{{biblio_summary_info.productNameEng[0]}}"
+                              },
+                              {
+                                "table": "trademark",
+                                "column": "last_disposal_code_name",
+                                "type": "text",
+                                "value": "{{biblio_summary_info.lastDisposalCode[0]}}"
+                              },
+                              {
+                                "table": "trademark",
+                                "column": "last_disposal_date",
+                                "type": "date",
+                                "value": "{{biblio_summary_info.lastDisposalDate[0].trim()?biblio_summary_info.lastDisposalDate[0]:null}}"
+                              },
+                              {
+                                "table": "trademark",
+                                "column": "international_register_number",
+                                "type": "text",
+                                "value": "{{biblio_summary_info.internationalRegisterNumber[0].trim()?biblio_summary_info.internationalRegisterNumber[0]:null}}"
+                              },
+                              {
+                                "table": "trademark",
+                                "column": "international_register_date",
+                                "type": "date",
+                                "value": "{{biblio_summary_info.internationalRegisterDate[0].trim()?biblio_summary_info.internationalRegisterDate[0]:null}}"
+                              },
+                              {
+                                "table": "trademark",
+                                "column": "type_code",
+                                "type": "text",
+                                "value": "{{biblio_summary_info.tmDivisionCode[0]}}"
+                              },
+                              {
+                                "table": "trademark",
+                                "column": "kind_code_name",
+                                "type": "text",
+                                "value": "{{biblio_summary_info.trademarkDivisionCode[0]}}"
+                              },
+                              {
+                                "table": "trademark",
+                                "column": "image_url",
+                                "type": "text",
+                                "value": "{{sample_image_info.path[0]}}"
+                              },
+                              {
+                                "table": "trademark",
+                                "column": "thumbnail_url",
+                                "type": "text",
+                                "value": "{{sample_image_info.smallPath[0]}}"
+                              },
+                              {
+                                "table": "trademark",
+                                "column": "applicant_name",
+                                "type": "text",
+                                "value": "{{applicant_info.nameKoreanLong[0]}}"
+                              },
+                              {
+                                "table": "trademark",
+                                "column": "agent_name",
+                                "type": "text",
+                                "value": "{{agent_info.nameKoreanLong[0]}}"
+                              },
+                              {
+                                "table": "trademark",
+                                "column": "updated_at",
+                                "type": "datetime",
+                                "value": "{{NOW_UTC}}"
+                              },
+                              {
+                                "table": "trademark",
+                                "column": "is_connected_kipris",
+                                "type": "boolean",
+                                "value": "1"
+                              },
+                              {
+                                "table": "trademark",
+                                "column": "applicant_code",
+                                "type": "text",
+                                "value": "{{applicant_info.applicantCode[0]}}"
+                              },
+                              {
+                                "table": "trademark",
+                                "column": "applicant_address",
+                                "type": "text",
+                                "value": "{{applicant_info.applicantAddress[0]}}"
+                              },
+                              {
+                                "table": "trademark",
+                                "column": "agent_address",
+                                "type": "text",
+                                "value": "{{agent_info.agentAddress[0]}}"
+                              },
+                              {
+                                "table": "trademark",
+                                "column": "agent_code",
+                                "type": "text",
+                                "value": "{{agent_info.agentCode[0]}}"
+                              }
+                            ],
+                            "table": "trademark",
+                            "wheres": {
+                              "condition": "AND",
+                              "rules": [
+                                {
+                                  "id": "id",
+                                  "field": "id",
+                                  "type": "double",
+                                  "operator": "equal",
+                                  "value": "{{$_SESSION.updated_tm_number.id}}",
+                                  "data": {
+                                    "column": "id"
+                                  },
+                                  "operation": "="
+                                }
+                              ],
+                              "conditional": null,
+                              "valid": true
+                            },
+                            "returning": "id",
+                            "query": "UPDATE trademark\nSET application_number = :P1 /* {{biblio_summary_info.applicationNumber[0].trim()?biblio_summary_info.applicationNumber[0]:null}} */, application_date = :P2 /* {{biblio_summary_info.applicationDate[0].trim() ? biblio_summary_info.applicationDate[0]:null}} */, app_reference_number = :P3 /* {{biblio_summary_info.appReferenceNumber[0].trim()?biblio_summary_info.appReferenceNumber[0]:null}} */, reg_reference_number = :P4 /* {{biblio_summary_info.regReferenceNumber[0]}} */, registration_number = :P5 /* {{biblio_summary_info.registrationNumber[0].split(',')[0]}} */, registration_date = :P6 /* {{biblio_summary_info.registrationDate[0].trim()?biblio_summary_info.registrationDate[0].split(',')[0]:null}} */, public_number = :P7 /* {{biblio_summary_info.publicationNumber[0]}} */, public_date = :P8 /* {{biblio_summary_info.publicationDate[0].trim()?biblio_summary_info.publicationDate[0]:null}} */, trademark_name = :P9 /* {{biblio_summary_info.productName[0]}} */, trademark_name_name_en = :P10 /* {{biblio_summary_info.productNameEng[0]}} */, last_disposal_code_name = :P11 /* {{biblio_summary_info.lastDisposalCode[0]}} */, last_disposal_date = :P12 /* {{biblio_summary_info.lastDisposalDate[0].trim()?biblio_summary_info.lastDisposalDate[0]:null}} */, international_register_number = :P13 /* {{biblio_summary_info.internationalRegisterNumber[0].trim()?biblio_summary_info.internationalRegisterNumber[0]:null}} */, international_register_date = :P14 /* {{biblio_summary_info.internationalRegisterDate[0].trim()?biblio_summary_info.internationalRegisterDate[0]:null}} */, type_code = :P15 /* {{biblio_summary_info.tmDivisionCode[0]}} */, kind_code_name = :P16 /* {{biblio_summary_info.trademarkDivisionCode[0]}} */, image_url = :P17 /* {{sample_image_info.path[0]}} */, thumbnail_url = :P18 /* {{sample_image_info.smallPath[0]}} */, applicant_name = :P19 /* {{applicant_info.nameKoreanLong[0]}} */, agent_name = :P20 /* {{agent_info.nameKoreanLong[0]}} */, updated_at = :P21 /* {{NOW_UTC}} */, is_connected_kipris = '1', applicant_code = :P22 /* {{applicant_info.applicantCode[0]}} */, applicant_address = :P23 /* {{applicant_info.applicantAddress[0]}} */, agent_address = :P24 /* {{agent_info.agentAddress[0]}} */, agent_code = :P25 /* {{agent_info.agentCode[0]}} */\nWHERE id = :P26 /* {{$_SESSION.updated_tm_number.id}} */",
+                            "params": [
+                              {
+                                "name": ":P1",
+                                "type": "expression",
+                                "value": "{{biblio_summary_info.applicationNumber[0].trim()?biblio_summary_info.applicationNumber[0]:null}}"
+                              },
+                              {
+                                "name": ":P2",
+                                "type": "expression",
+                                "value": "{{biblio_summary_info.applicationDate[0].trim() ? biblio_summary_info.applicationDate[0]:null}}"
+                              },
+                              {
+                                "name": ":P3",
+                                "type": "expression",
+                                "value": "{{biblio_summary_info.appReferenceNumber[0].trim()?biblio_summary_info.appReferenceNumber[0]:null}}"
+                              },
+                              {
+                                "name": ":P4",
+                                "type": "expression",
+                                "value": "{{biblio_summary_info.regReferenceNumber[0]}}"
+                              },
+                              {
+                                "name": ":P5",
+                                "type": "expression",
+                                "value": "{{biblio_summary_info.registrationNumber[0].split(',')[0]}}"
+                              },
+                              {
+                                "name": ":P6",
+                                "type": "expression",
+                                "value": "{{biblio_summary_info.registrationDate[0].trim()?biblio_summary_info.registrationDate[0].split(',')[0]:null}}"
+                              },
+                              {
+                                "name": ":P7",
+                                "type": "expression",
+                                "value": "{{biblio_summary_info.publicationNumber[0]}}"
+                              },
+                              {
+                                "name": ":P8",
+                                "type": "expression",
+                                "value": "{{biblio_summary_info.publicationDate[0].trim()?biblio_summary_info.publicationDate[0]:null}}"
+                              },
+                              {
+                                "name": ":P9",
+                                "type": "expression",
+                                "value": "{{biblio_summary_info.productName[0]}}"
+                              },
+                              {
+                                "name": ":P10",
+                                "type": "expression",
+                                "value": "{{biblio_summary_info.productNameEng[0]}}"
+                              },
+                              {
+                                "name": ":P11",
+                                "type": "expression",
+                                "value": "{{biblio_summary_info.lastDisposalCode[0]}}"
+                              },
+                              {
+                                "name": ":P12",
+                                "type": "expression",
+                                "value": "{{biblio_summary_info.lastDisposalDate[0].trim()?biblio_summary_info.lastDisposalDate[0]:null}}"
+                              },
+                              {
+                                "name": ":P13",
+                                "type": "expression",
+                                "value": "{{biblio_summary_info.internationalRegisterNumber[0].trim()?biblio_summary_info.internationalRegisterNumber[0]:null}}"
+                              },
+                              {
+                                "name": ":P14",
+                                "type": "expression",
+                                "value": "{{biblio_summary_info.internationalRegisterDate[0].trim()?biblio_summary_info.internationalRegisterDate[0]:null}}"
+                              },
+                              {
+                                "name": ":P15",
+                                "type": "expression",
+                                "value": "{{biblio_summary_info.tmDivisionCode[0]}}"
+                              },
+                              {
+                                "name": ":P16",
+                                "type": "expression",
+                                "value": "{{biblio_summary_info.trademarkDivisionCode[0]}}"
+                              },
+                              {
+                                "name": ":P17",
+                                "type": "expression",
+                                "value": "{{sample_image_info.path[0]}}"
+                              },
+                              {
+                                "name": ":P18",
+                                "type": "expression",
+                                "value": "{{sample_image_info.smallPath[0]}}"
+                              },
+                              {
+                                "name": ":P19",
+                                "type": "expression",
+                                "value": "{{applicant_info.nameKoreanLong[0]}}"
+                              },
+                              {
+                                "name": ":P20",
+                                "type": "expression",
+                                "value": "{{agent_info.nameKoreanLong[0]}}"
+                              },
+                              {
+                                "name": ":P21",
+                                "type": "expression",
+                                "value": "{{NOW_UTC}}"
+                              },
+                              {
+                                "name": ":P22",
+                                "type": "expression",
+                                "value": "{{applicant_info.applicantCode[0]}}"
+                              },
+                              {
+                                "name": ":P23",
+                                "type": "expression",
+                                "value": "{{applicant_info.applicantAddress[0]}}"
+                              },
+                              {
+                                "name": ":P24",
+                                "type": "expression",
+                                "value": "{{agent_info.agentAddress[0]}}"
+                              },
+                              {
+                                "name": ":P25",
+                                "type": "expression",
+                                "value": "{{agent_info.agentCode[0]}}"
+                              },
+                              {
+                                "operator": "equal",
+                                "type": "expression",
+                                "name": ":P26",
+                                "value": "{{$_SESSION.updated_tm_number.id}}"
+                              }
+                            ]
+                          }
+                        },
+                        "meta": [
+                          {
+                            "name": "affected",
+                            "type": "number"
+                          }
+                        ],
+                        "output": true
+                      },
+                      {
+                        "name": "",
+                        "module": "core",
+                        "action": "condition",
+                        "options": {
+                          "if": "{{vienna_code_info}}",
+                          "then": {
+                            "steps": [
+                              {
+                                "name": "init_vienna_codes",
+                                "module": "dbupdater",
+                                "action": "delete",
+                                "options": {
+                                  "connection": "db",
+                                  "sql": {
+                                    "type": "delete",
+                                    "table": "trademark_vienna_code",
+                                    "wheres": {
+                                      "condition": "AND",
+                                      "rules": [
+                                        {
+                                          "id": "trademark_id",
+                                          "field": "trademark_id",
+                                          "type": "double",
+                                          "operator": "equal",
+                                          "value": "{{$_SESSION.updated_tm_number.id}}",
+                                          "data": {
+                                            "column": "trademark_id"
+                                          },
+                                          "operation": "="
+                                        }
+                                      ],
+                                      "conditional": null,
+                                      "valid": true
+                                    },
+                                    "returning": "id",
+                                    "query": "DELETE\nFROM trademark_vienna_code\nWHERE trademark_id = :P1 /* {{$_SESSION.updated_tm_number.id}} */",
+                                    "params": [
+                                      {
+                                        "operator": "equal",
+                                        "type": "expression",
+                                        "name": ":P1",
+                                        "value": "{{$_SESSION.updated_tm_number.id}}"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "meta": [
+                                  {
+                                    "name": "affected",
+                                    "type": "number"
+                                  }
+                                ]
+                              },
+                              {
+                                "name": "vienna_create",
+                                "module": "core",
+                                "action": "repeat",
+                                "options": {
+                                  "repeat": "{{vienna_code_info}}",
+                                  "outputFields": [],
+                                  "exec": {
+                                    "steps": {
+                                      "name": "insert_vienna_code",
+                                      "module": "dbupdater",
+                                      "action": "insert",
+                                      "options": {
+                                        "connection": "db",
+                                        "sql": {
+                                          "type": "insert",
+                                          "values": [
+                                            {
+                                              "table": "trademark_vienna_code",
+                                              "column": "trademark_id",
+                                              "type": "number",
+                                              "value": "{{$_SESSION.updated_tm_number.id}}"
+                                            },
+                                            {
+                                              "table": "trademark_vienna_code",
+                                              "column": "vienna_code",
+                                              "type": "number",
+                                              "value": "{{$value.viennaCode[0]}}"
+                                            },
+                                            {
+                                              "table": "trademark_vienna_code",
+                                              "column": "created_at",
+                                              "type": "datetime",
+                                              "value": "{{NOW_UTC}}"
+                                            }
+                                          ],
+                                          "table": "trademark_vienna_code",
+                                          "returning": "id",
+                                          "query": "INSERT INTO trademark_vienna_code\n(trademark_id, vienna_code, created_at) VALUES (:P1 /* {{$_SESSION.updated_tm_number.id}} */, :P2 /* {{$value.viennaCode[0]}} */, :P3 /* {{NOW_UTC}} */)",
+                                          "params": [
+                                            {
+                                              "name": ":P1",
+                                              "type": "expression",
+                                              "value": "{{$_SESSION.updated_tm_number.id}}"
+                                            },
+                                            {
+                                              "name": ":P2",
+                                              "type": "expression",
+                                              "value": "{{$value.viennaCode[0]}}"
+                                            },
+                                            {
+                                              "name": ":P3",
+                                              "type": "expression",
+                                              "value": "{{NOW_UTC}}"
+                                            }
+                                          ]
+                                        }
+                                      },
+                                      "meta": [
+                                        {
+                                          "name": "identity",
+                                          "type": "text"
+                                        },
+                                        {
+                                          "name": "affected",
+                                          "type": "number"
+                                        }
+                                      ]
+                                    }
+                                  }
+                                },
+                                "output": false,
+                                "meta": [
+                                  {
+                                    "name": "$index",
+                                    "type": "number"
+                                  },
+                                  {
+                                    "name": "$number",
+                                    "type": "number"
+                                  },
+                                  {
+                                    "name": "$name",
+                                    "type": "text"
+                                  },
+                                  {
+                                    "name": "$value",
+                                    "type": "object"
+                                  }
+                                ],
+                                "outputType": "array"
+                              }
+                            ]
+                          }
+                        },
+                        "outputType": "boolean"
+                      },
+                      {
+                        "name": "",
+                        "module": "core",
+                        "action": "condition",
+                        "options": {
+                          "if": "{{product_type[0]}}",
+                          "then": {
+                            "steps": {
+                              "name": "product_type_create",
+                              "module": "core",
+                              "action": "repeat",
+                              "options": {
+                                "repeat": "{{product_type}}",
+                                "outputFields": [],
+                                "exec": {
+                                  "steps": [
+                                    {
+                                      "name": "init_product_type",
+                                      "module": "dbupdater",
+                                      "action": "delete",
+                                      "options": {
+                                        "connection": "db",
+                                        "sql": {
+                                          "type": "delete",
+                                          "table": "trademark_product_type",
+                                          "wheres": {
+                                            "condition": "AND",
+                                            "rules": [
+                                              {
+                                                "id": "trademark_id",
+                                                "field": "trademark_id",
+                                                "type": "double",
+                                                "operator": "equal",
+                                                "value": "{{$_SESSION.updated_tm_number.id}}",
+                                                "data": {
+                                                  "column": "trademark_id"
+                                                },
+                                                "operation": "="
+                                              }
+                                            ],
+                                            "conditional": null,
+                                            "valid": true
+                                          },
+                                          "query": "DELETE\nFROM trademark_product_type\nWHERE trademark_id = :P1 /* {{$_SESSION.updated_tm_number.id}} */",
+                                          "params": [
+                                            {
+                                              "operator": "equal",
+                                              "type": "expression",
+                                              "name": ":P1",
+                                              "value": "{{$_SESSION.updated_tm_number.id}}"
+                                            }
+                                          ]
+                                        }
+                                      },
+                                      "meta": [
+                                        {
+                                          "name": "affected",
+                                          "type": "number"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "name": "insert_product_type",
+                                      "module": "dbupdater",
+                                      "action": "insert",
+                                      "options": {
+                                        "connection": "db",
+                                        "sql": {
+                                          "type": "insert",
+                                          "values": [
+                                            {
+                                              "table": "trademark_product_type",
+                                              "column": "trademark_id",
+                                              "type": "number",
+                                              "value": "{{$_SESSION.updated_tm_number.id}}"
+                                            },
+                                            {
+                                              "table": "trademark_product_type",
+                                              "column": "product_type_code",
+                                              "type": "number",
+                                              "value": "{{$value}}"
+                                            },
+                                            {
+                                              "table": "trademark_product_type",
+                                              "column": "created_at",
+                                              "type": "datetime",
+                                              "value": "{{NOW_UTC}}"
+                                            }
+                                          ],
+                                          "table": "trademark_product_type",
+                                          "query": "INSERT INTO trademark_product_type\n(trademark_id, product_type_code, created_at) VALUES (:P1 /* {{$_SESSION.updated_tm_number.id}} */, :P2 /* {{$value}} */, :P3 /* {{NOW_UTC}} */)",
+                                          "params": [
+                                            {
+                                              "name": ":P1",
+                                              "type": "expression",
+                                              "value": "{{$_SESSION.updated_tm_number.id}}"
+                                            },
+                                            {
+                                              "name": ":P2",
+                                              "type": "expression",
+                                              "value": "{{$value}}"
+                                            },
+                                            {
+                                              "name": ":P3",
+                                              "type": "expression",
+                                              "value": "{{NOW_UTC}}"
+                                            }
+                                          ]
+                                        }
+                                      },
+                                      "meta": [
+                                        {
+                                          "name": "identity",
+                                          "type": "text"
+                                        },
+                                        {
+                                          "name": "affected",
+                                          "type": "number"
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              },
+                              "output": true,
+                              "meta": [
+                                {
+                                  "name": "$index",
+                                  "type": "number"
+                                },
+                                {
+                                  "name": "$number",
+                                  "type": "number"
+                                },
+                                {
+                                  "name": "$name",
+                                  "type": "text"
+                                },
+                                {
+                                  "name": "$value",
+                                  "type": "object"
+                                }
+                              ],
+                              "outputType": "array"
+                            }
+                          }
+                        },
+                        "outputType": "boolean",
+                        "output": true
+                      }
+                    ]
+                  },
+                  "else": {
+                    "steps": {
+                      "name": "update_connected_fail",
+                      "module": "dbupdater",
+                      "action": "update",
+                      "options": {
+                        "connection": "db",
+                        "sql": {
+                          "type": "update",
+                          "values": [
+                            {
+                              "table": "trademark",
+                              "column": "updated_at",
+                              "type": "datetime",
+                              "value": "{{NOW_UTC}}"
+                            },
+                            {
+                              "table": "trademark",
+                              "column": "is_connected_kipris",
+                              "type": "boolean",
+                              "value": "0"
+                            }
+                          ],
+                          "table": "trademark",
+                          "wheres": {
+                            "condition": "AND",
+                            "rules": [
+                              {
+                                "id": "id",
+                                "field": "id",
+                                "type": "double",
+                                "operator": "equal",
+                                "value": "{{$_SESSION.updated_tm_number.id}}",
+                                "data": {
+                                  "column": "id"
+                                },
+                                "operation": "="
+                              }
+                            ],
+                            "conditional": null,
+                            "valid": true
+                          },
+                          "returning": "id",
+                          "query": "UPDATE trademark\nSET updated_at = :P1 /* {{NOW_UTC}} */, is_connected_kipris = '0'\nWHERE id = :P2 /* {{$_SESSION.updated_tm_number.id}} */",
+                          "params": [
+                            {
+                              "name": ":P1",
+                              "type": "expression",
+                              "value": "{{NOW_UTC}}"
+                            },
+                            {
+                              "operator": "equal",
+                              "type": "expression",
+                              "name": ":P2",
+                              "value": "{{$_SESSION.updated_tm_number.id}}"
+                            }
+                          ]
+                        }
+                      },
+                      "meta": [
+                        {
+                          "name": "affected",
+                          "type": "number"
+                        }
+                      ]
+                    }
+                  }
+                },
+                "outputType": "boolean"
+              }
+            ]
+          }
+        },
+        "outputType": "boolean"
+      }
+    ]
+  }
+}

@@ -1,0 +1,69 @@
+{
+  "routes": [
+    {
+      "path": "/",
+      "page": "index",
+      "layout": "main"
+    },
+    {
+      "path": "/manager/index",
+      "page": "manager/index",
+      "layout": "admin"
+    },
+    {
+      "path": "/trademarks",
+      "page": "trademarks",
+      "layout": "main"
+    },
+    {
+      "path": "/admin/login",
+      "page": "admin/login",
+      "layout": "admin"
+    },
+    {
+      "path": "/admin",
+      "page": "admin/index",
+      "layout": "admin"
+    },
+    {
+      "path": "/admin/trademarks",
+      "page": "admin/trademarks",
+      "layout": "admin"
+    },
+    {
+      "path": "/start",
+      "page": "start",
+      "layout": "main"
+    },
+    {
+      "path": "/contact",
+      "page": "contact",
+      "layout": "main"
+    },
+    {
+      "path": "/contact/complete",
+      "page": "contact/complete",
+      "layout": "admin"
+    },
+    {
+      "path": "/admin/contact",
+      "page": "admin/contact",
+      "layout": "admin"
+    },
+    {
+      "path": "/admin/contact/:id",
+      "page": "admin/contact/id",
+      "layout": "admin"
+    }
+  ],
+  "partials": {
+    "test": {
+      "meta": [
+        {
+          "type": "text",
+          "name": "asdads"
+        }
+      ]
+    }
+  }
+}

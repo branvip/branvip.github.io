@@ -1,0 +1,152 @@
+{
+  "meta": {
+    "$_GET": [
+      {
+        "type": "text",
+        "name": "label_ids"
+      },
+      {
+        "type": "text",
+        "name": "f_vienna"
+      },
+      {
+        "type": "text",
+        "name": "f_product_type"
+      },
+      {
+        "type": "text",
+        "name": "offset"
+      }
+    ]
+  },
+  "exec": {
+    "steps": [
+      {
+        "name": "trademarks",
+        "module": "dbupdater",
+        "action": "custom",
+        "options": {
+          "connection": "db",
+          "sql": {
+            "query": "with labels as (\n    select tl.trademark_id, json_agg(l order by l.id) as labels\n    from trademark_label tl\n             inner join label l on tl.label_id = l.id\n    group by tl.trademark_id\n    having case\n               when :label_ids::text is null then 1 = 1\n               else array_agg(l.id::text) @> string_to_array(:label_ids::text, ',') end\n)\nselect t.labels,\n       case\n       when last_disposal_code_name like '%포기%' then '포기'\n           when last_disposal_code_name like '%등록%' then '등록'\n           when last_disposal_code_name like '%취하%' then '취하'\n           when last_disposal_code_name like '%거절%' then '거절'\n           else '출원'\n           end as last_status,\n       tm.id, tm.image_url, tm.thumbnail_url,\n       coalesce(application_number, app_reference_number) as tm_number\nfrom trademark tm\n         inner join labels t on t.trademark_id = tm.id\nwhere EXISTS(select 1\n             from trademark_product_type spt\n             where tm.id = spt.trademark_id\n               and case\n                       when\n                           :product_type::text is null then 1 = 1\n                       else spt.product_type_code = :product_type::text end)\n  and EXISTS(select 1\n             from trademark_vienna_code tvc\n                      inner join vienna_code vc on tvc.vienna_code = vc.code\n             where tm.id = tvc.trademark_id\n               and case when :vienna_code::text is null then 1 = 1 else vc.parent_code like :vienna_code::text end)\n  and tm.is_connected_kipris is true\n  and tm.type_code like '%도형%'\nlimit 18 offset :offset",
+            "params": [
+              {
+                "name": ":label_ids",
+                "value": "{{$_GET.label_ids?$_GET.label_ids:null}}",
+                "test": ""
+              },
+              {
+                "name": ":vienna_code",
+                "value": "{{$_GET.f_vienna ? $_GET.f_vienna.substr(0, 2)+'%':null}}"
+              },
+              {
+                "name": ":product_type",
+                "value": "{{$_GET.f_product_type?$_GET.f_product_type:null}}"
+              },
+              {
+                "name": ":offset",
+                "value": "{{$_GET.offset?$_GET.offset:0}}"
+              }
+            ]
+          }
+        },
+        "output": true,
+        "meta": [],
+        "outputType": "array"
+      },
+      {
+        "name": "total_count",
+        "module": "dbupdater",
+        "action": "custom",
+        "options": {
+          "connection": "db",
+          "sql": {
+            "query": "with labels as (\n    select tl.trademark_id, json_agg(l order by l.id) as labels\n    from trademark_label tl\n             inner join label l on tl.label_id = l.id\n    group by tl.trademark_id\n    having case\n               when :label_ids::text is null then 1 = 1\n               else array_agg(l.id::text) @> string_to_array(:label_ids::text, ',') end\n)\nselect count(tm.id)\nfrom trademark tm\n         inner join labels t on t.trademark_id = tm.id\nwhere EXISTS(select 1\n             from trademark_product_type spt\n             where tm.id = spt.trademark_id\n               and case\n                       when\n                           :product_type::text is null then 1 = 1\n                       else spt.product_type_code = :product_type::text end)\n  and EXISTS(select 1\n             from trademark_vienna_code tvc\n                      inner join vienna_code vc on tvc.vienna_code = vc.code\n             where tm.id = tvc.trademark_id\n               and case when :vienna_code::text is null then 1 = 1 else vc.parent_code like :vienna_code::text end)\n  and tm.is_connected_kipris is true\n  and tm.type_code like '%도형%'",
+            "params": [
+              {
+                "name": ":label_ids",
+                "value": "{{$_GET.label_ids?$_GET.label_ids:null}}",
+                "test": ""
+              },
+              {
+                "name": ":vienna_code",
+                "value": "{{$_GET.f_vienna ? $_GET.f_vienna.substr(0, 2)+'%':null}}"
+              },
+              {
+                "name": ":product_type",
+                "value": "{{$_GET.f_product_type?$_GET.f_product_type:null}}"
+              }
+            ]
+          }
+        },
+        "output": true,
+        "meta": [],
+        "outputType": "array"
+      },
+      {
+        "name": "limit",
+        "module": "core",
+        "action": "setvalue",
+        "options": {
+          "value": 18
+        },
+        "meta": [],
+        "outputType": "text",
+        "output": true
+      },
+      {
+        "name": "total",
+        "module": "core",
+        "action": "setvalue",
+        "options": {
+          "value": "{{total_count[0].count.toNumber()}}"
+        },
+        "meta": [],
+        "outputType": "number",
+        "output": true
+      },
+      {
+        "name": "offset",
+        "module": "core",
+        "action": "setvalue",
+        "options": {
+          "value": "{{$_GET.offset?$_GET.offset:0}}"
+        },
+        "meta": [],
+        "outputType": "number",
+        "output": true
+      },
+      {
+        "name": "page",
+        "module": "core",
+        "action": "setvalue",
+        "options": {
+          "value": {
+            "current": "{{(offset/limit).round(0)+1}}",
+            "total": "{{((total/limit).round(0))}}",
+            "offset": {
+              "first": 0,
+              "last": "{{((total/limit).round(0)-1)*limit}}",
+              "next": "{{((offset/limit).round(0)+1)*limit}}",
+              "prev": "{{((offset/limit).round(0)-1)*limit}}"
+            }
+          },
+          "schema": [
+            {
+              "type": "text",
+              "name": "test"
+            }
+          ]
+        },
+        "meta": [
+          {
+            "type": "text",
+            "name": "test"
+          }
+        ],
+        "outputType": "object",
+        "output": true
+      }
+    ]
+  }
+}

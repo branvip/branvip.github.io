@@ -1,0 +1,40 @@
+{
+  "meta": {
+    "$_GET": [
+      {
+        "type": "text",
+        "name": "sort"
+      },
+      {
+        "type": "text",
+        "name": "dir"
+      }
+    ]
+  },
+  "exec": {
+    "steps": {
+      "name": "product_types",
+      "module": "dbupdater",
+      "action": "custom",
+      "options": {
+        "connection": "db",
+        "sql": {
+          "query": "select code, title\n\nfrom product_type\norder by code",
+          "params": []
+        }
+      },
+      "output": true,
+      "meta": [
+        {
+          "name": "title",
+          "type": "text"
+        },
+        {
+          "name": "code",
+          "type": "text"
+        }
+      ],
+      "outputType": "array"
+    }
+  }
+}

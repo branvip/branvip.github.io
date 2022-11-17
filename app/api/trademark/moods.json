@@ -1,0 +1,111 @@
+{
+  "name": "moods",
+  "module": "dbconnector",
+  "action": "select",
+  "options": {
+    "sql": {
+      "type": "SELECT",
+      "sort": "",
+      "dir": "",
+      "columns": [
+        {
+          "table": "label",
+          "column": "id"
+        },
+        {
+          "table": "label",
+          "column": "title"
+        },
+        {
+          "table": "label",
+          "column": "color"
+        },
+        {
+          "table": "label",
+          "column": "bg-color",
+          "aggregate": "",
+          "alias": "bg_color"
+        },
+        {
+          "table": "label",
+          "column": "thumbnail_url"
+        },
+        {
+          "table": "label",
+          "column": "image_url"
+        }
+      ],
+      "table": {
+        "name": "label"
+      },
+      "primary": "id",
+      "joins": [],
+      "wheres": {
+        "condition": "AND",
+        "rules": [
+          {
+            "id": "label.id",
+            "field": "label.id",
+            "type": "double",
+            "operator": "not_equal",
+            "value": 3,
+            "data": {
+              "table": "label",
+              "column": "id",
+              "type": "number",
+              "columnObj": {
+                "type": "increments",
+                "default": "",
+                "primary": true,
+                "unique": true,
+                "nullable": false,
+                "name": "id"
+              }
+            },
+            "operation": "<>"
+          }
+        ],
+        "conditional": null,
+        "valid": true
+      },
+      "query": "SELECT id, title, color, \"bg-color\" AS bg_color, thumbnail_url, image_url\nFROM label\nWHERE id <> 3\nORDER BY title ASC",
+      "params": [],
+      "orders": [
+        {
+          "table": "label",
+          "column": "title",
+          "direction": "ASC"
+        }
+      ]
+    },
+    "connection": "db"
+  },
+  "output": true,
+  "meta": [
+    {
+      "type": "number",
+      "name": "id"
+    },
+    {
+      "type": "text",
+      "name": "title"
+    },
+    {
+      "type": "text",
+      "name": "color"
+    },
+    {
+      "type": "text",
+      "name": "bg_color"
+    },
+    {
+      "type": "text",
+      "name": "thumbnail_url"
+    },
+    {
+      "type": "text",
+      "name": "image_url"
+    }
+  ],
+  "outputType": "array"
+}

@@ -1,0 +1,32 @@
+{
+  "meta": {
+    "$_GET": [
+      {
+        "type": "text",
+        "name": "tm_number"
+      }
+    ]
+  },
+  "exec": {
+    "steps": [
+      {
+        "name": "detail_tm_number",
+        "module": "core",
+        "action": "setsession",
+        "options": {
+          "value": "{{$_GET.tm_number}}"
+        },
+        "output": false
+      },
+      {
+        "name": "kipris_plus",
+        "module": "core",
+        "action": "exec",
+        "options": {
+          "exec": "kipris_plus/detail"
+        },
+        "output": true
+      }
+    ]
+  }
+}

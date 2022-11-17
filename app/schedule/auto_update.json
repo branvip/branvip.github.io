@@ -1,0 +1,19 @@
+{
+  "settings": {
+    "options": {
+      "rule": "* * * * * *"
+    }
+  },
+  "exec": {
+    "steps": {
+      "name": "exec",
+      "module": "core",
+      "action": "exec",
+      "options": {
+        "exec": "kipris_plus/auto_update"
+      },
+      "output": true,
+      "disabled": true
+    }
+  }
+}

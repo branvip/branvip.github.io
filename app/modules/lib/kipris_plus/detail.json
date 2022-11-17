@@ -1,0 +1,210 @@
+{
+  "meta": {
+    "$_SESSION": [
+      {
+        "type": "text",
+        "name": "detail_tm_number"
+      }
+    ]
+  },
+  "exec": {
+    "steps": {
+      "name": "",
+      "module": "core",
+      "action": "condition",
+      "options": {
+        "if": "{{$_SESSION.detail_tm_number}}",
+        "then": {
+          "steps": [
+            {
+              "name": "",
+              "options": {
+                "comment": "biblio detail"
+              }
+            },
+            {
+              "name": "api_detail",
+              "module": "api",
+              "action": "send",
+              "options": {
+                "url": "http://plus.kipris.or.kr/kipo-api/kipi/trademarkInfoSearchService/getBibliographyDetailInfoSearch",
+                "params": {
+                  "ServiceKey": "JRz2glirBuZs1jlxrcAuLeG6DXGsb8GeDb700KdBxSs=",
+                  "applicationNumber": "{{$_SESSION.detail_tm_number}}"
+                }
+              },
+              "output": false
+            },
+            {
+              "name": "json_detail_info",
+              "module": "core",
+              "action": "setvalue",
+              "options": {
+                "value": "{{xml2json(api_detail.data)}}"
+              },
+              "meta": [],
+              "outputType": "object"
+            },
+            {
+              "name": "tm_info",
+              "module": "core",
+              "action": "setvalue",
+              "options": {
+                "value": "{{json_detail_info.response.body[0].item[0]}}"
+              },
+              "meta": [],
+              "outputType": "object"
+            },
+            {
+              "name": "administrativeMeasureInfoArray",
+              "module": "core",
+              "action": "setvalue",
+              "options": {
+                "value": "{{tm_info.administrativeMeasureInfoArray[0].administrativeMeasureInfo}}"
+              },
+              "meta": [],
+              "outputType": "array",
+              "output": true
+            },
+            {
+              "name": "applicantInfoArray",
+              "module": "core",
+              "action": "setvalue",
+              "options": {
+                "value": "{{tm_info.applicantInfoArray[0].applicantInfo}}"
+              },
+              "meta": [],
+              "outputType": "array",
+              "output": true
+            },
+            {
+              "name": "productTypes",
+              "module": "core",
+              "action": "setvalue",
+              "options": {
+                "value": "{{tm_info.asignProductArray[0].asignProduct.flatten('mainCode').flatten(0).unique()}}"
+              },
+              "meta": [],
+              "outputType": "text",
+              "output": true
+            },
+            {
+              "name": "asignProductArray",
+              "module": "core",
+              "action": "setvalue",
+              "options": {
+                "value": "{{tm_info.asignProductArray[0].asignProduct}}"
+              },
+              "meta": [],
+              "outputType": "array",
+              "output": true
+            },
+            {
+              "name": "biblioSummaryInfo",
+              "module": "core",
+              "action": "setvalue",
+              "options": {
+                "value": "{{tm_info.biblioSummaryInfoArray[0].biblioSummaryInfo[0]}}"
+              },
+              "meta": [],
+              "outputType": "object",
+              "output": true
+            },
+            {
+              "name": "publicationInfo",
+              "module": "core",
+              "action": "setvalue",
+              "options": {
+                "value": "{{tm_info.publicationInfoArray[0].publicationInfo[0]}}"
+              },
+              "meta": [],
+              "outputType": "object",
+              "output": true
+            },
+            {
+              "name": "similarityCodeInfoArray",
+              "module": "core",
+              "action": "setvalue",
+              "options": {
+                "value": "{{tm_info.similarityCodeInfoArray[0].similarityCodeInfo}}"
+              },
+              "meta": [],
+              "outputType": "array",
+              "output": true
+            },
+            {
+              "name": "viennaCodeInfoArray",
+              "module": "core",
+              "action": "setvalue",
+              "options": {
+                "value": "{{tm_info.viennaCodeInfoArray[0].viennaCodeInfo}}"
+              },
+              "meta": [],
+              "outputType": "array",
+              "output": true
+            },
+            {
+              "name": "",
+              "module": "core",
+              "action": "condition",
+              "options": {
+                "if": "{{biblioSummaryInfo.registerStatus[0]=='거절'}}",
+                "then": {
+                  "steps": [
+                    {
+                      "name": "api_reject_docs",
+                      "module": "api",
+                      "action": "send",
+                      "options": {
+                        "url": "http://plus.kipris.or.kr:80/openapi/rest/IntermediateDocumentREService/pdfInfoV2",
+                        "params": {
+                          "accessKey": "JRz2glirBuZs1jlxrcAuLeG6DXGsb8GeDb700KdBxSs=",
+                          "applicationNumber": "{{$_SESSION.detail_tm_number}}"
+                        }
+                      },
+                      "output": false
+                    },
+                    {
+                      "name": "json_reject_docs",
+                      "module": "core",
+                      "action": "setvalue",
+                      "options": {
+                        "value": "{{xml2json(api_reject_docs.data)}}"
+                      },
+                      "meta": [],
+                      "outputType": "object",
+                      "output": false
+                    },
+                    {
+                      "name": "reject_docs_pdf_url",
+                      "module": "core",
+                      "action": "setvalue",
+                      "options": {
+                        "value": "{{json_reject_docs.response.body[0].items[0].pdfInfoV2[0].filePath[0]}}"
+                      },
+                      "meta": [],
+                      "outputType": "object",
+                      "output": true
+                    }
+                  ]
+                }
+              },
+              "outputType": "boolean"
+            }
+          ]
+        },
+        "else": {
+          "steps": {
+            "name": "",
+            "module": "core",
+            "action": "response",
+            "options": {
+              "status": 404
+            }
+          }
+        }
+      },
+      "outputType": "boolean"
+    }
+  }
+}

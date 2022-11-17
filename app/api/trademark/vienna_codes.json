@@ -1,0 +1,44 @@
+{
+  "meta": {
+    "$_GET": [
+      {
+        "type": "text",
+        "name": "sort"
+      },
+      {
+        "type": "text",
+        "name": "dir"
+      }
+    ]
+  },
+  "exec": {
+    "steps": {
+      "name": "vienna_codes",
+      "module": "dbupdater",
+      "action": "custom",
+      "options": {
+        "connection": "db",
+        "sql": {
+          "query": "select code, title, note\nfrom vienna_code vc\nwhere vc.parent_code is null\n  and code not in ('290000', '980000')",
+          "params": []
+        }
+      },
+      "output": true,
+      "meta": [
+        {
+          "name": "title",
+          "type": "text"
+        },
+        {
+          "name": "code",
+          "type": "text"
+        },
+        {
+          "name": "note",
+          "type": "text"
+        }
+      ],
+      "outputType": "array"
+    }
+  }
+}

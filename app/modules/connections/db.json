@@ -1,0 +1,19 @@
+{
+  "name": "db",
+  "module": "dbconnector",
+  "action": "connect",
+  "options": {
+    "client": "postgres",
+    "connection": {
+      "host": "branvip-db.cizu0ucjbcd4.ap-northeast-2.rds.amazonaws.com",
+      "port": 5432,
+      "user": "branvip",
+      "password": "branvipDB1234*",
+      "database": "branvip"
+    },
+    "meta": {}
+  },
+  "fileName": "db.json",
+  "actionFilePath": "file:///C:/Users/hayun/500MVP/02_branvip/app/modules/connections/db.json",
+  "serverType": "node"
+}

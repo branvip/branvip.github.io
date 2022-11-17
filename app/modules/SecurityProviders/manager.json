@@ -1,0 +1,19 @@
+{
+  "name": "manager",
+  "module": "auth",
+  "action": "provider",
+  "options": {
+    "secret": "VreLW20rOszLdXW",
+    "provider": "Single",
+    "username": "qmfosqlq",
+    "password": "qmfosqlq32343@#%",
+    "expires": 3,
+    "connection": "db"
+  },
+  "meta": [
+    {
+      "name": "identity",
+      "type": "text"
+    }
+  ]
+}

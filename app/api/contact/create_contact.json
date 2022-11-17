@@ -1,0 +1,355 @@
+{
+  "meta": {
+    "$_POST": [
+      {
+        "type": "text",
+        "name": "trademark_ids"
+      },
+      {
+        "type": "text",
+        "name": "contact_type"
+      },
+      {
+        "type": "text",
+        "name": "contact_message"
+      },
+      {
+        "type": "text",
+        "name": "phone_number"
+      },
+      {
+        "type": "text",
+        "name": "name"
+      },
+      {
+        "type": "text",
+        "name": "email"
+      },
+      {
+        "type": "array",
+        "name": "record",
+        "sub": [
+          {
+            "type": "number",
+            "name": "insert_contact"
+          },
+          {
+            "type": "number",
+            "name": "$value"
+          }
+        ]
+      }
+    ]
+  },
+  "exec": {
+    "steps": [
+      {
+        "name": "insert_contact",
+        "module": "dbupdater",
+        "action": "insert",
+        "options": {
+          "connection": "db",
+          "sql": {
+            "type": "insert",
+            "values": [
+              {
+                "table": "contact",
+                "column": "contact_type",
+                "type": "text",
+                "value": "{{$_POST.contact_type}}"
+              },
+              {
+                "table": "contact",
+                "column": "contact_message",
+                "type": "text",
+                "value": "{{$_POST.contact_message}}"
+              },
+              {
+                "table": "contact",
+                "column": "phone_number",
+                "type": "text",
+                "value": "{{$_POST.phone_number}}"
+              },
+              {
+                "table": "contact",
+                "column": "name",
+                "type": "text",
+                "value": "{{$_POST.name}}"
+              },
+              {
+                "table": "contact",
+                "column": "email",
+                "type": "text",
+                "value": "{{$_POST.email}}"
+              }
+            ],
+            "table": "contact",
+            "returning": "id",
+            "query": "INSERT INTO contact\n(contact_type, contact_message, phone_number, name, email) VALUES (:P1 /* {{$_POST.contact_type}} */, :P2 /* {{$_POST.contact_message}} */, :P3 /* {{$_POST.phone_number}} */, :P4 /* {{$_POST.name}} */, :P5 /* {{$_POST.email}} */)",
+            "params": [
+              {
+                "name": ":P1",
+                "type": "expression",
+                "value": "{{$_POST.contact_type}}"
+              },
+              {
+                "name": ":P2",
+                "type": "expression",
+                "value": "{{$_POST.contact_message}}"
+              },
+              {
+                "name": ":P3",
+                "type": "expression",
+                "value": "{{$_POST.phone_number}}"
+              },
+              {
+                "name": ":P4",
+                "type": "expression",
+                "value": "{{$_POST.name}}"
+              },
+              {
+                "name": ":P5",
+                "type": "expression",
+                "value": "{{$_POST.email}}"
+              }
+            ]
+          }
+        },
+        "meta": [
+          {
+            "name": "identity",
+            "type": "text"
+          },
+          {
+            "name": "affected",
+            "type": "number"
+          }
+        ],
+        "output": false
+      },
+      {
+        "name": "",
+        "module": "core",
+        "action": "condition",
+        "options": {
+          "if": "{{$_POST.trademark_ids}}",
+          "then": {
+            "steps": [
+              {
+                "name": "trademark_ids",
+                "module": "core",
+                "action": "setvalue",
+                "options": {
+                  "value": "{{$_POST.trademark_ids.split(',')}}"
+                },
+                "meta": [],
+                "outputType": "text",
+                "output": false
+              },
+              {
+                "name": "repeat",
+                "module": "core",
+                "action": "repeat",
+                "options": {
+                  "repeat": "{{trademark_ids}}",
+                  "outputFields": [],
+                  "exec": {
+                    "steps": {
+                      "name": "insert",
+                      "module": "dbupdater",
+                      "action": "insert",
+                      "options": {
+                        "connection": "db",
+                        "sql": {
+                          "type": "insert",
+                          "values": [
+                            {
+                              "table": "contact_trademark",
+                              "column": "contact_id",
+                              "type": "number",
+                              "value": "{{insert_contact.identity}}"
+                            },
+                            {
+                              "table": "contact_trademark",
+                              "column": "trademark_id",
+                              "type": "number",
+                              "value": "{{$value}}"
+                            }
+                          ],
+                          "table": "contact_trademark",
+                          "returning": "id",
+                          "query": "INSERT INTO contact_trademark\n(contact_id, trademark_id) VALUES (:P1 /* {{insert_contact.identity}} */, :P2 /* {{$value}} */)",
+                          "params": [
+                            {
+                              "name": ":P1",
+                              "type": "expression",
+                              "value": "{{insert_contact.identity}}"
+                            },
+                            {
+                              "name": ":P2",
+                              "type": "expression",
+                              "value": "{{$value}}"
+                            }
+                          ]
+                        }
+                      },
+                      "meta": [
+                        {
+                          "name": "identity",
+                          "type": "text"
+                        },
+                        {
+                          "name": "affected",
+                          "type": "number"
+                        }
+                      ]
+                    }
+                  }
+                },
+                "meta": [
+                  {
+                    "name": "$index",
+                    "type": "number"
+                  },
+                  {
+                    "name": "$number",
+                    "type": "number"
+                  },
+                  {
+                    "name": "$name",
+                    "type": "text"
+                  },
+                  {
+                    "name": "$value",
+                    "type": "object"
+                  }
+                ],
+                "outputType": "array"
+              }
+            ]
+          }
+        },
+        "outputType": "boolean"
+      },
+      {
+        "name": "",
+        "module": "core",
+        "action": "condition",
+        "options": {
+          "if": "{{$_POST.phone_number}}",
+          "then": {
+            "steps": [
+              {
+                "name": "salt",
+                "module": "core",
+                "action": "setvalue",
+                "options": {
+                  "value": "{{UUID.replace('-','')}}"
+                },
+                "meta": [],
+                "outputType": "text"
+              },
+              {
+                "name": "date",
+                "module": "core",
+                "action": "setvalue",
+                "options": {
+                  "value": "{{NOW_UTC}}"
+                },
+                "meta": [],
+                "outputType": "text"
+              },
+              {
+                "name": "signature",
+                "module": "core",
+                "action": "setvalue",
+                "options": {
+                  "value": "{{(date+salt).hmac('sha256', '9J1COVUBCYQTYCB7YM18IBRC1YSQQWC4')}}"
+                },
+                "meta": [],
+                "outputType": "text"
+              },
+              {
+                "name": "auth",
+                "module": "core",
+                "action": "setvalue",
+                "options": {
+                  "value": "{{'HMAC-SHA256 apiKey=NCSDNW4KWC9MZFCG, date='+date+',salt='+salt+',signature='+signature}}"
+                },
+                "meta": [],
+                "outputType": "text"
+              },
+              {
+                "name": "message",
+                "module": "core",
+                "action": "setvalue",
+                "options": {
+                  "value": {
+                    "to": "{{$_POST.phone_number}}",
+                    "from": "0260825109",
+                    "text": "[브랜빕] 의뢰해 주셔서 감사합니다. 24시간 이내에 해당 연락처로 담당자가 연락드리겠습니다.",
+                    "type": "SMS"
+                  }
+                },
+                "meta": [],
+                "outputType": "text",
+                "output": false
+              },
+              {
+                "name": "send_sms",
+                "module": "api",
+                "action": "send",
+                "options": {
+                  "method": "POST",
+                  "dataType": "json",
+                  "data": {
+                    "message": "{{message}}"
+                  },
+                  "headers": {
+                    "Authorization": "{{auth}}"
+                  },
+                  "url": "https://api.solapi.com/messages/v4/send"
+                },
+                "output": true
+              },
+              {
+                "name": "message_internal",
+                "module": "core",
+                "action": "setvalue",
+                "options": {
+                  "value": {
+                    "to": "01037108522",
+                    "from": "0260825109",
+                    "text": "[신규 문의 접수] {{$_POST.name}} ({{$_POST.phone_number}}) 자세히보기 : https://branvip.com/admin/contact/{{insert_contact.identity}}",
+                    "type": "SMS"
+                  }
+                },
+                "meta": [],
+                "outputType": "text",
+                "output": false
+              },
+              {
+                "name": "send_sms_internal",
+                "module": "api",
+                "action": "send",
+                "options": {
+                  "method": "POST",
+                  "dataType": "json",
+                  "data": {
+                    "message": "{{message_internal}}"
+                  },
+                  "headers": {
+                    "Authorization": "{{auth}}"
+                  },
+                  "url": "https://api.solapi.com/messages/v4/send"
+                },
+                "output": true
+              }
+            ]
+          }
+        },
+        "outputType": "boolean"
+      }
+    ]
+  }
+}

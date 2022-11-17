@@ -1,0 +1,94 @@
+{
+  "meta": {
+    "$_POST": [
+      {
+        "type": "text",
+        "name": "contact_id"
+      }
+    ]
+  },
+  "exec": {
+    "steps": [
+      {
+        "name": "",
+        "module": "auth",
+        "action": "restrict",
+        "options": {
+          "provider": "manager",
+          "loginUrl": "/admin/login",
+          "forbiddenUrl": "/"
+        }
+      },
+      {
+        "name": "update_to_old",
+        "module": "dbupdater",
+        "action": "update",
+        "options": {
+          "connection": "db",
+          "sql": {
+            "type": "update",
+            "values": [
+              {
+                "table": "contact",
+                "column": "status",
+                "type": "text",
+                "value": "{{'old'}}"
+              },
+              {
+                "table": "contact",
+                "column": "updated_at",
+                "type": "datetime",
+                "value": "{{NOW_UTC}}"
+              }
+            ],
+            "table": "contact",
+            "wheres": {
+              "condition": "AND",
+              "rules": [
+                {
+                  "id": "id",
+                  "field": "id",
+                  "type": "double",
+                  "operator": "equal",
+                  "value": "{{$_POST.contact_id}}",
+                  "data": {
+                    "column": "id"
+                  },
+                  "operation": "="
+                }
+              ],
+              "conditional": null,
+              "valid": true
+            },
+            "returning": "id",
+            "query": "UPDATE contact\nSET status = :P1 /* {{'old'}} */, updated_at = :P2 /* {{NOW_UTC}} */\nWHERE id = :P3 /* {{$_POST.contact_id}} */",
+            "params": [
+              {
+                "name": ":P1",
+                "type": "expression",
+                "value": "{{'old'}}"
+              },
+              {
+                "name": ":P2",
+                "type": "expression",
+                "value": "{{NOW_UTC}}"
+              },
+              {
+                "operator": "equal",
+                "type": "expression",
+                "name": ":P3",
+                "value": "{{$_POST.contact_id}}"
+              }
+            ]
+          }
+        },
+        "meta": [
+          {
+            "name": "affected",
+            "type": "number"
+          }
+        ]
+      }
+    ]
+  }
+}

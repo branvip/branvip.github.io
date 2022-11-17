@@ -1,0 +1,38 @@
+{
+  "meta": {
+    "options": {
+      "linkedFile": "/views/admin/login.ejs",
+      "linkedForm": "form_admin_login"
+    },
+    "$_POST": [
+      {
+        "type": "text",
+        "fieldName": "username",
+        "name": "username"
+      },
+      {
+        "type": "text",
+        "fieldName": "password",
+        "name": "password"
+      },
+      {
+        "type": "text",
+        "fieldName": "remember",
+        "name": "remember"
+      }
+    ]
+  },
+  "exec": {
+    "steps": {
+      "name": "identity",
+      "module": "auth",
+      "action": "login",
+      "options": {
+        "provider": "manager",
+        "remember": 1
+      },
+      "output": false,
+      "meta": []
+    }
+  }
+}
